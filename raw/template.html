@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kriminalitet i danske kommuner · 2016–2025</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#171d26; --panel2:#1e2630; --line:#2a3340;
+    --ink:#e8edf2; --muted:#9aa7b4; --accent:#4ea1ff; --accent2:#ffd166;
+    --nodata:#39424d;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans",sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent)}
+  header{padding:18px 20px 6px}
+  h1{font-size:20px;margin:0 0 2px;font-weight:700;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:13px;margin:0}
+  .wrap{display:flex;gap:16px;padding:12px 16px 24px;align-items:stretch}
+  @media (max-width:880px){ .wrap{flex-direction:column} }
+  .mapcard{flex:1 1 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    position:relative;min-height:380px;overflow:hidden;box-shadow:var(--shadow)}
+  .side{flex:0 0 330px;display:flex;flex-direction:column;gap:12px}
+  @media (max-width:880px){ .side{flex:none} }
+
+  /* Controls */
+  .controls{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  .ctl-label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:0 0 6px}
+  .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  .seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:9px 8px;border-radius:8px;
+    font-size:13px;cursor:pointer;font-weight:600;transition:.12s;line-height:1.15}
+  .seg button .s{display:block;font-size:10.5px;font-weight:500;opacity:.8}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#04111f;box-shadow:0 1px 6px rgba(78,161,255,.4)}
+  .seg button[aria-pressed="true"] .s{opacity:.85}
+  .metric-caption{margin:10px 0 0;font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .metric-caption .dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .metric-caption b{color:var(--accent)}
+  select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:9px;padding:9px 10px;font-size:13.5px;margin-top:4px}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row>div{flex:1 1 140px}
+  .sliderrow{margin-top:14px}
+  .yearhead{display:flex;justify-content:space-between;align-items:baseline}
+  .yearbig{font-size:26px;font-weight:800;color:var(--accent2);letter-spacing:1px}
+  input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--accent)}
+  .playrow{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .playbtn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;
+    padding:6px 12px;font-size:13px;cursor:pointer;font-weight:600}
+  .ticks{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:2px}
+
+  /* Detail panel */
+  .detail{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);flex:1}
+  .detail h2{margin:0;font-size:18px}
+  .detail .place-sub{color:var(--muted);font-size:12px;margin:2px 0 12px}
+  .stat-grid{display:flex;gap:10px;margin-bottom:14px}
+  .stat{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:19px;font-weight:700;margin-top:3px}
+  .stat .v small{font-size:12px;color:var(--muted);font-weight:500}
+  .bk-title{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:6px 0 8px}
+  .bar{display:grid;grid-template-columns:78px 1fr auto;align-items:center;gap:8px;margin:7px 0;font-size:13px}
+  .bar .nm{color:var(--muted)}
+  .bar .track{height:14px;background:var(--panel2);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+  .bar .fill{height:100%;border-radius:7px}
+  .bar .val{font-variant-numeric:tabular-nums;font-weight:600;min-width:52px;text-align:right}
+  .bar .val small{color:var(--muted);font-weight:500}
+  .hint{color:var(--muted);font-size:12px;line-height:1.5}
+
+  /* Legend */
+  .legend{position:absolute;left:14px;bottom:14px;background:rgba(15,20,25,.86);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;backdrop-filter:blur(4px);max-width:240px}
+  .legend .lt{font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.35}
+  .legend .lt b{color:var(--ink)}
+  .legend .scale{display:flex;flex-direction:column;gap:2px}
+  .legend .li{display:flex;align-items:center;gap:8px;font-size:11.5px;font-variant-numeric:tabular-nums}
+  .legend .sw{width:18px;height:12px;border-radius:3px;flex:none;border:1px solid rgba(255,255,255,.12)}
+  .legend .li.nd .sw{background:var(--nodata)}
+
+  /* Map svg */
+  svg{display:block;width:100%;height:100%}
+  path.kom{stroke:#0f1419;stroke-width:.4;cursor:pointer;transition:fill .25s}
+  path.kom:hover{stroke:#fff;stroke-width:1.1}
+  path.kom.sel{stroke:#fff;stroke-width:1.4}
+  .maptip{position:absolute;pointer-events:none;background:#0b0f14;border:1px solid var(--line);
+    border-radius:8px;padding:7px 10px;font-size:12.5px;box-shadow:var(--shadow);opacity:0;transition:opacity .1s;max-width:200px;z-index:5}
+  .maptip b{display:block;font-size:13.5px;margin-bottom:2px}
+  .maptip .tv{color:var(--accent2);font-weight:700}
+  footer{color:var(--muted);font-size:11.5px;padding:0 20px 22px;line-height:1.5}
+  .zoomrow{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}
+  .zoomrow button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:rgba(15,20,25,.85);
+    color:var(--ink);font-size:18px;cursor:pointer;line-height:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Kriminalitet i danske kommuner</h1>
+  <p class="sub">Anmeldte forbrydelser pr. kommune · 2016–2025 · Kilde: Danmarks Statistik (STRAF11 &amp; FOLK1A)</p>
+</header>
+
+<div class="wrap">
+  <div class="mapcard">
+    <div id="map"></div>
+    <div class="zoomrow">
+      <button id="zin" title="Zoom ind">+</button>
+      <button id="zout" title="Zoom ud">–</button>
+      <button id="zreset" title="Nulstil" style="font-size:13px">⟳</button>
+    </div>
+    <div class="legend" id="legend">
+      <div class="lt" id="legcap"></div>
+      <div class="scale" id="legscale"></div>
+    </div>
+    <div class="maptip" id="tip"></div>
+  </div>
+
+  <div class="side">
+    <div class="controls">
+      <p class="ctl-label">Farvelæg efter</p>
+      <div class="seg" id="metricSeg" role="group" aria-label="Metric">
+        <button id="mRate" aria-pressed="true">Pr. 1.000 indbyggere<span class="s">rate — sammenlignelig</span></button>
+        <button id="mCount" aria-pressed="false">Samlet antal<span class="s">absolutte tal</span></button>
+      </div>
+      <p class="metric-caption"><span class="dot"></span><span id="metricCap">Viser: <b>forbrydelser pr. 1.000 indbyggere</b></span></p>
+
+      <div style="margin-top:14px">
+        <p class="ctl-label">Forbrydelsestype</p>
+        <select id="catSel"></select>
+      </div>
+
+      <div class="sliderrow">
+        <div class="yearhead"><p class="ctl-label" style="margin:0">År</p><span class="yearbig" id="yearLbl">2025</span></div>
+        <input type="range" id="yearRange" min="2016" max="2025" step="1" value="2025">
+        <div class="ticks"><span>2016</span><span>2020</span><span>2025</span></div>
+        <div class="playrow"><button class="playbtn" id="play">▶ Afspil</button><span class="hint" id="playhint">scrub gennem årene</span></div>
+      </div>
+    </div>
+
+    <div class="detail" id="detail">
+      <h2 id="dName">Hold musen over et område</h2>
+      <p class="place-sub" id="dSub">…eller tryk på en kommune for at se detaljer</p>
+      <div class="stat-grid">
+        <div class="stat"><div class="k">Forbrydelser i alt</div><div class="v" id="dTotal">–</div></div>
+        <div class="stat"><div class="k">Indbyggere</div><div class="v" id="dPop">–</div></div>
+      </div>
+      <div class="stat-grid" style="margin-top:-4px">
+        <div class="stat"><div class="k">Pr. 1.000 indb.</div><div class="v" id="dRate">–</div></div>
+        <div class="stat"><div class="k">Placering (rate)</div><div class="v" id="dRank">–</div></div>
+      </div>
+      <p class="bk-title">Fordeling på typer <span id="bkMetric" style="text-transform:none;letter-spacing:0"></span></p>
+      <div id="bars"></div>
+      <p class="hint" id="dHint" style="margin-top:12px"></p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Tal er <b>anmeldte</b> forbrydelser (ikke domme). Indbrud = privat + erhverv; Tyveri = butikstyveri + andre tyverier.
+  Grå kommuner mangler data. Befolkningstal pr. 1. januar. Data: Danmarks Statistik, frit tilgængeligt under CC BY 4.0.
+  Bygget som én selvstændig offline-fil.
+</footer>
+
+<script>
+const CRIME = /*CRIME_DATA*/;
+const GEO = /*GEO_DATA*/;
+
+// ---- palette (sequential, colour-blind friendly-ish YlOrRd) ----
+const RAMP = ['#fef0c8','#fed070','#fda44c','#fb7434','#e8451f','#bd0026'];
+const NODATA = getCSS('--nodata');
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+const CATS = CRIME.categories;            // total, violence, burglary, theft, drugs, weapons
+const CATLAB = {total:'Alle forbrydelser',violence:'Vold',burglary:'Indbrud',theft:'Tyveri',drugs:'Narkotika',weapons:'Våben'};
+const BREAKDOWN = ['violence','burglary','theft','drugs','weapons'];
+const BD_COLORS = {violence:'#ff6b6b',burglary:'#ffd166',theft:'#4ea1ff',drugs:'#9b8cff',weapons:'#5bd1b0'};
+const years = CRIME.years;
+
+let state = {year:2025, metric:'rate', cat:'total', sel:null, pinned:false};
+
+// ---- value lookup ----
+function rawVal(code, cat, yi){ const m=CRIME.munis[code]; if(!m) return null; const a=m[cat]; return a?a[yi]:null; }
+function popVal(code, yi){ const m=CRIME.munis[code]; if(!m) return null; return m.pop?m.pop[yi]:null; }
+function metricVal(code, cat, yi, metric){
+  const v=rawVal(code,cat,yi); if(v==null) return null;
+  if(metric==='count') return v;
+  const p=popVal(code,yi); if(!p) return null;
+  return v/p*1000;
+}
+
+// ---- breaks computed over ALL years for current metric+cat (comparable over time) ----
+let breaks=[];
+function computeBreaks(){
+  const vals=[];
+  for(const code in CRIME.munis){
+    for(let yi=0; yi<years.length; yi++){
+      const v=metricVal(code,state.cat,yi,state.metric);
+      if(v!=null && isFinite(v)) vals.push(v);
+    }
+  }
+  vals.sort((a,b)=>a-b);
+  // 6 classes via quantiles
+  const q=p=>vals[Math.min(vals.length-1, Math.floor(p*(vals.length-1)))];
+  breaks=[q(1/6),q(2/6),q(3/6),q(4/6),q(5/6)];
+  // de-duplicate
+  for(let i=1;i<breaks.length;i++) if(breaks[i]<=breaks[i-1]) breaks[i]=breaks[i-1]+1e-6;
+}
+function colorFor(v){
+  if(v==null||!isFinite(v)) return NODATA;
+  let i=0; while(i<breaks.length && v>breaks[i]) i++;
+  return RAMP[i];
+}
+
+// ---- formatting ----
+const nf=new Intl.NumberFormat('da-DK');
+const nf1=new Intl.NumberFormat('da-DK',{minimumFractionDigits:1,maximumFractionDigits:1});
+function fmt(n){return n==null?'–':nf.format(Math.round(n));}
+function fmt1(n){return n==null?'–':nf1.format(n);}
+
+// ---- projection & svg build ----
+const mapDiv=document.getElementById('map');
+let VB={w:700,h:560};
+let proj;
+function buildProjection(){
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const f of GEO.features){
+    eachCoord(f.geometry,(lon,lat)=>{
+      if(lon<minLon)minLon=lon; if(lon>maxLon)maxLon=lon;
+      if(lat<minLat)minLat=lat; if(lat>maxLat)maxLat=lat;
+    });
+  }
+  const midLat=(minLat+maxLat)/2*Math.PI/180;
+  const k=Math.cos(midLat);
+  const pad=12;
+  const dx=(maxLon-minLon)*k, dy=(maxLat-minLat);
+  const W=700, H=Math.round(W*dy/dx);
+  VB={w:W,h:H};
+  const sx=(W-2*pad)/dx, sy=(H-2*pad)/dy; const s=Math.min(sx,sy);
+  proj=(lon,lat)=>[pad+(lon-minLon)*k*s, pad+(maxLat-lat)*s];
+}
+function eachCoord(geom, cb){
+  const t=geom.type, c=geom.coordinates;
+  const walk=(arr,depth)=>{ if(depth===0){cb(arr[0],arr[1]);return;} for(const a of arr) walk(a,depth-1); };
+  if(t==='Polygon') walk(c,2); else if(t==='MultiPolygon') walk(c,3);
+}
+function pathFor(geom){
+  let d='';
+  const ring=r=>{ for(let i=0;i<r.length;i++){const[x,y]=proj(r[i][0],r[i][1]); d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);} d+='Z'; };
+  if(geom.type==='Polygon') geom.coordinates.forEach(ring);
+  else if(geom.type==='MultiPolygon') geom.coordinates.forEach(p=>p.forEach(ring));
+  return d;
+}
+
+let svg, gZoom, paths={};
+function buildMap(){
+  buildProjection();
+  svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox',`0 0 ${VB.w} ${VB.h}`);
+  gZoom=document.createElementNS('http://www.w3.org/2000/svg','g');
+  svg.appendChild(gZoom);
+  for(const f of GEO.features){
+    const code=f.properties.k;
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',pathFor(f.geometry));
+    p.setAttribute('class','kom');
+    p.dataset.code=code; p.dataset.name=f.properties.n;
+    p.addEventListener('mousemove',ev=>onHover(ev,code,f.properties.n));
+    p.addEventListener('mouseleave',onLeave);
+    p.addEventListener('click',ev=>{state.pinned=true; selectCode(code,f.properties.n); positionTipAt(ev);});
+    gZoom.appendChild(p);
+    paths[code]=p;
+  }
+  mapDiv.appendChild(svg);
+  setupZoom();
+}
+
+// ---- render colors ----
+function render(){
+  computeBreaks();
+  const yi=years.indexOf(state.year);
+  for(const code in paths){
+    const v=metricVal(code,state.cat,yi,state.metric);
+    paths[code].setAttribute('fill',colorFor(v));
+  }
+  drawLegend();
+  document.getElementById('yearLbl').textContent=state.year;
+  // refresh panel if something selected
+  if(state.sel) selectCode(state.sel.code,state.sel.name,true);
+}
+
+function drawLegend(){
+  const cap=document.getElementById('legcap');
+  const unit = state.metric==='rate' ? 'pr. 1.000 indb.' : 'antal';
+  cap.innerHTML = `Viser: <b>${CATLAB[state.cat]}</b><br>${state.metric==='rate'?'forbrydelser pr. 1.000 indbyggere':'samlet antal forbrydelser'} · ${state.year}`;
+  const sc=document.getElementById('legscale'); sc.innerHTML='';
+  const edges=[0,...breaks,Infinity];
+  for(let i=0;i<RAMP.length;i++){
+    const lo=edges[i], hi=edges[i+1];
+    const label = hi===Infinity ? `${fmtLeg(lo)}+` : `${fmtLeg(lo)} – ${fmtLeg(hi)}`;
+    const li=document.createElement('div'); li.className='li';
+    li.innerHTML=`<span class="sw" style="background:${RAMP[i]}"></span><span>${label}</span>`;
+    sc.appendChild(li);
+  }
+  const nd=document.createElement('div'); nd.className='li nd';
+  nd.innerHTML=`<span class="sw"></span><span>ingen data</span>`; sc.appendChild(nd);
+}
+function fmtLeg(v){ return state.metric==='rate'? fmt1(v) : fmt(v); }
+
+// ---- detail panel ----
+function selectCode(code,name,keepPin){
+  const yi=years.indexOf(state.year);
+  state.sel={code,name};
+  for(const c in paths) paths[c].classList.toggle('sel', c===code);
+  const m=CRIME.munis[code];
+  document.getElementById('dName').textContent=name;
+  if(!m){
+    document.getElementById('dSub').textContent=`${state.year} · ingen data for denne kommune`;
+    document.getElementById('dTotal').textContent='–';
+    document.getElementById('dPop').textContent='–';
+    document.getElementById('dRate').textContent='–';
+    document.getElementById('dRank').textContent='–';
+    document.getElementById('bars').innerHTML='<p class="hint">Christiansø indgår ikke separat i statistikken.</p>';
+    document.getElementById('dHint').textContent='';
+    return;
+  }
+  const tot=rawVal(code,'total',yi), pop=popVal(code,yi);
+  const rate=tot/pop*1000;
+  document.getElementById('dSub').textContent=`${state.year} · ${CATLAB[state.cat]==='Alle forbrydelser'?'alle typer':CATLAB[state.cat]} valgt`;
+  document.getElementById('dTotal').innerHTML=`${fmt(tot)}`;
+  document.getElementById('dPop').innerHTML=`${fmt(pop)}`;
+  document.getElementById('dRate').innerHTML=`${fmt1(rate)} <small>/1.000</small>`;
+  document.getElementById('dRank').innerHTML=rankText(code,yi);
+  // breakdown bars (always per the breakdown cats), show abs + rate
+  const showRate = state.metric==='rate';
+  document.getElementById('bkMetric').textContent = showRate?'(pr. 1.000 indb.)':'(antal)';
+  let maxv=0; const rows=BREAKDOWN.map(cat=>{
+    const a=rawVal(code,cat,yi); const val= showRate? a/pop*1000 : a;
+    if(val>maxv)maxv=val; return {cat,a,val};
+  });
+  const bars=document.getElementById('bars'); bars.innerHTML='';
+  rows.sort((x,y)=>y.val-x.val);
+  for(const r of rows){
+    const w=maxv>0?Math.max(2,(r.val/maxv*100)):0;
+    const valtxt = showRate? `${fmt1(r.val)} <small>/1k</small>` : fmt(r.a);
+    const div=document.createElement('div'); div.className='bar';
+    div.innerHTML=`<span class="nm">${CATLAB[r.cat]}</span>
+      <span class="track"><span class="fill" style="width:${w}%;background:${BD_COLORS[r.cat]}"></span></span>
+      <span class="val">${valtxt}</span>`;
+    bars.appendChild(div);
+  }
+  const top=rows[0];
+  document.getElementById('dHint').innerHTML=
+    `Hyppigste type her: <b>${CATLAB[top.cat]}</b> (${fmt(top.a)} anmeldelser, ${fmt1(top.a/pop*1000)} pr. 1.000).`;
+}
+function rankText(code,yi){
+  const arr=[];
+  for(const c in CRIME.munis){ const v=metricVal(c,'total',yi,'rate'); if(v!=null) arr.push([c,v]); }
+  arr.sort((a,b)=>b[1]-a[1]);
+  const idx=arr.findIndex(x=>x[0]===code);
+  return idx<0?'–':`#${idx+1} <small>af ${arr.length}</small>`;
+}
+
+// ---- tooltip ----
+const tip=document.getElementById('tip');
+function onHover(ev,code,name){
+  if(!state.pinned) selectCode(code,name);
+  const yi=years.indexOf(state.year);
+  const v=metricVal(code,state.cat,yi,state.metric);
+  const vtxt = v==null?'ingen data':(state.metric==='rate'?`${fmt1(v)} pr. 1.000`:`${fmt(v)} anmeldelser`);
+  tip.innerHTML=`<b>${name}</b><span>${CATLAB[state.cat]}, ${state.year}</span><br><span class="tv">${vtxt}</span>`;
+  tip.style.opacity=1; positionTipAt(ev);
+}
+function positionTipAt(ev){
+  const r=mapDiv.getBoundingClientRect();
+  let x=ev.clientX-r.left+14, y=ev.clientY-r.top+14;
+  if(x+200>r.width) x=ev.clientX-r.left-200;
+  if(y+70>r.height) y=ev.clientY-r.top-70;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+function onLeave(){ tip.style.opacity=0; }
+
+// ---- controls ----
+function setMetric(m){
+  state.metric=m;
+  document.getElementById('mRate').setAttribute('aria-pressed', m==='rate');
+  document.getElementById('mCount').setAttribute('aria-pressed', m==='count');
+  document.getElementById('metricCap').innerHTML = m==='rate'
+    ? 'Viser: <b>forbrydelser pr. 1.000 indbyggere</b>'
+    : 'Viser: <b>samlet antal forbrydelser</b>';
+  render();
+}
+document.getElementById('mRate').onclick=()=>setMetric('rate');
+document.getElementById('mCount').onclick=()=>setMetric('count');
+
+const catSel=document.getElementById('catSel');
+[['total','Alle forbrydelser (samlet)'],['violence','Vold'],['burglary','Indbrud'],['theft','Tyveri'],['drugs','Narkotika'],['weapons','Våben']]
+  .forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;catSel.appendChild(o);});
+catSel.onchange=()=>{state.cat=catSel.value; render();};
+
+const yr=document.getElementById('yearRange');
+yr.oninput=()=>{state.year=+yr.value; render();};
+
+// play
+let playing=false, timer=null;
+document.getElementById('play').onclick=function(){
+  playing=!playing; this.textContent=playing?'❚❚ Stop':'▶ Afspil';
+  if(playing){
+    timer=setInterval(()=>{
+      let y=state.year+1; if(y>years[years.length-1]) y=years[0];
+      state.year=y; yr.value=y; render();
+    },900);
+  } else clearInterval(timer);
+};
+
+// ---- zoom/pan ----
+let zoom={s:1,x:0,y:0};
+function applyZoom(){ gZoom.setAttribute('transform',`translate(${zoom.x} ${zoom.y}) scale(${zoom.s})`); }
+function setupZoom(){
+  document.getElementById('zin').onclick=()=>{zoom.s=Math.min(8,zoom.s*1.4);applyZoom();};
+  document.getElementById('zout').onclick=()=>{zoom.s=Math.max(1,zoom.s/1.4); if(zoom.s===1){zoom.x=0;zoom.y=0;} applyZoom();};
+  document.getElementById('zreset').onclick=()=>{zoom={s:1,x:0,y:0};applyZoom();};
+  let drag=false,sx,sy;
+  svg.addEventListener('mousedown',e=>{drag=true;sx=e.clientX-zoom.x;sy=e.clientY-zoom.y;});
+  window.addEventListener('mouseup',()=>drag=false);
+  svg.addEventListener('mousemove',e=>{if(drag){zoom.x=e.clientX-sx;zoom.y=e.clientY-sy;applyZoom();}});
+  svg.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.15:1/1.15;zoom.s=Math.max(1,Math.min(8,zoom.s*f));if(zoom.s===1){zoom.x=0;zoom.y=0;}applyZoom();},{passive:false});
+}
+
+// ---- init ----
+buildMap();
+render();
+// default-select the capital for an informative first view
+selectCode('101','København');
+</script>
+</body>
+</html>
